@@ -32,10 +32,18 @@ struct reqreadstruct {
     unsigned char bytes[254];
 };
 
+struct writemulticoilstruct {
+    unsigned short firstreg;
+    unsigned short regnumber;
+    unsigned char bytestofollow;
+    unsigned char coils[256];
+};
+
 union pdudataunion {
     struct askreadregstruct askreadregs;
     struct reqreadstruct reqread;
     struct writeregstruct writereg;
+    struct writemulticoilstruct writemulticoil;
     unsigned short words[127];
 };
 
@@ -85,10 +93,73 @@ struct mbframestruct askframe;
 
 int main(int argc, char *argv[])
 {
-    if (argc != 4)
+    if (argc < 2)
     {
-        printf("name function code and both values\n");
+        printf("name function code and its values\n");
+        printf("1 first amount: read coil\n");
+        printf("2 first amount: read discrete\n");
+        printf("3 first amount: read input\n");
+        printf("4 first amount: read holding\n");
+        printf("5 number value: write coil\n");
+        printf("6 number value: write holding\n");
         return 1;
+    }
+    
+    sscanf(argv[1],"%hhu",&mbframe.pdu.fncode); // <-----
+    
+    switch (mbframe.pdu.fncode)
+    {
+        case 1:
+        case 2:
+            if (argc < 4)
+            {
+                printf("name first coil/discrete and amount to return\n");
+                return 1;
+            }
+            sscanf(argv[2],"%hu",&mbframe.pdu.data.askreadregs.firstreg);
+            mbframe.pdu.data.askreadregs.firstreg = htons(mbframe.pdu.data.askreadregs.firstreg);
+            sscanf(argv[3],"%hu",&mbframe.pdu.data.askreadregs.regnumber);
+            mbframe.pdu.data.askreadregs.regnumber = htons(mbframe.pdu.data.askreadregs.regnumber);
+        case 3:
+        case 4:
+            if (argc < 4)
+            {
+                printf("name first input/holding and amount to return\n");
+                return 1;
+            }
+            sscanf(argv[2],"%hu",&mbframe.pdu.data.askreadregs.firstreg);
+            mbframe.pdu.data.askreadregs.firstreg = htons(mbframe.pdu.data.askreadregs.firstreg);
+            sscanf(argv[3],"%hu",&mbframe.pdu.data.askreadregs.regnumber);
+            mbframe.pdu.data.askreadregs.regnumber = htons(mbframe.pdu.data.askreadregs.regnumber);
+        case 5:
+        case 6:
+            if (argc < 4)
+            {
+                printf("name register number and value to set\n");
+                return 1;
+            }
+            sscanf(argv[2],"%hu",&mbframe.pdu.data.writereg.regaddress);
+            mbframe.pdu.data.writereg.regaddress = htons(mbframe.pdu.data.writereg.regaddress);
+            sscanf(argv[3],"%hu",&mbframe.pdu.data.writereg.regvalue);
+            mbframe.pdu.data.writereg.regvalue = htons(mbframe.pdu.data.writereg.regvalue);
+        case 15:
+        case 16:
+            if (argc < 4)
+            {
+                printf("name first register, registers amount to set, number of bytes to follow and bytes with values\n");
+                return 1;
+            }
+            sscanf(argv[2],"%hu",&mbframe.pdu.data.writemulticoil.firstreg);
+            mbframe.pdu.data.writemulticoil.firstreg = htons(mbframe.pdu.data.writemulticoil.firstreg);
+            sscanf(argv[3],"%hu",&mbframe.pdu.data.writemulticoil.regnumber);
+            mbframe.pdu.data.writemulticoil.regnumber = htons(mbframe.pdu.data.writemulticoil.regnumber);
+            sscanf(argv[4],"%hhu",&mbframe.pdu.data.writemulticoil.bytestofollow);
+            for (int i=0;i<mbframe.pdu.data.writemulticoil.bytestofollow;i++)
+                sscanf(argv[4+i],"%hhu",&mbframe.pdu.data.writemulticoil.coils[i]);
+            break;
+        default:
+            printf("unknown function number");
+            break;
     }
     
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -119,7 +190,6 @@ int main(int argc, char *argv[])
     
     //int numwrite = send(sock,ask,12,0);
     
-    sscanf(argv[1],"%hhu",&mbframe.pdu.fncode); // <-----
     sscanf(argv[2],"%hu",&mbframe.pdu.data.words[0]);
     mbframe.pdu.data.words[0] = htons(mbframe.pdu.data.words[0]);
     sscanf(argv[3],"%hu",&mbframe.pdu.data.words[1]);
@@ -196,6 +266,9 @@ int main(int argc, char *argv[])
                 printf("register number %u\n", ntohs(askframe.pdu.data.writereg.regaddress));
                 printf("register value %u\n", ntohs(askframe.pdu.data.writereg.regvalue));
                 break;
+            default:
+                printf("unknown function number");
+                break;
         }
     }
     
@@ -213,4 +286,3 @@ int main(int argc, char *argv[])
     
     return 0;
 }
-
