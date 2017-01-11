@@ -91,6 +91,12 @@ struct mbframestruct mbframe = {
 
 struct mbframestruct askframe;
 
+void printbinary(unsigned char value)
+{
+    for (int i = 0; i < 8; i++)
+        printf("%u", (value >> (7-i)) & 0x01);
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 2)
@@ -102,6 +108,8 @@ int main(int argc, char *argv[])
         printf("4 first amount: read holding\n");
         printf("5 number value: write coil\n");
         printf("6 number value: write holding\n");
+        printf("15 first amount number value: write miltiple coil\n");
+        printf("16 first amount number value: write miltiple holding\n");
         return 1;
     }
     
@@ -120,6 +128,7 @@ int main(int argc, char *argv[])
             mbframe.pdu.data.askreadregs.firstreg = htons(mbframe.pdu.data.askreadregs.firstreg);
             sscanf(argv[3],"%hu",&mbframe.pdu.data.askreadregs.regnumber);
             mbframe.pdu.data.askreadregs.regnumber = htons(mbframe.pdu.data.askreadregs.regnumber);
+            break;
         case 3:
         case 4:
             if (argc < 4)
@@ -131,6 +140,7 @@ int main(int argc, char *argv[])
             mbframe.pdu.data.askreadregs.firstreg = htons(mbframe.pdu.data.askreadregs.firstreg);
             sscanf(argv[3],"%hu",&mbframe.pdu.data.askreadregs.regnumber);
             mbframe.pdu.data.askreadregs.regnumber = htons(mbframe.pdu.data.askreadregs.regnumber);
+            break;
         case 5:
         case 6:
             if (argc < 4)
@@ -142,9 +152,10 @@ int main(int argc, char *argv[])
             mbframe.pdu.data.writereg.regaddress = htons(mbframe.pdu.data.writereg.regaddress);
             sscanf(argv[3],"%hu",&mbframe.pdu.data.writereg.regvalue);
             mbframe.pdu.data.writereg.regvalue = htons(mbframe.pdu.data.writereg.regvalue);
+            break;
         case 15:
         case 16:
-            if (argc < 4)
+            if (argc < 5)
             {
                 printf("name first register, registers amount to set, number of bytes to follow and bytes with values\n");
                 return 1;
@@ -159,6 +170,7 @@ int main(int argc, char *argv[])
             break;
         default:
             printf("unknown function number");
+            return 1;
             break;
     }
     
@@ -187,13 +199,6 @@ int main(int argc, char *argv[])
     {
         printf("connect ok\n");
     }
-    
-    //int numwrite = send(sock,ask,12,0);
-    
-    sscanf(argv[2],"%hu",&mbframe.pdu.data.words[0]);
-    mbframe.pdu.data.words[0] = htons(mbframe.pdu.data.words[0]);
-    sscanf(argv[3],"%hu",&mbframe.pdu.data.words[1]);
-    mbframe.pdu.data.words[1] = htons(mbframe.pdu.data.words[1]);
     
     ssize_t numwrite = send(sock,&mbframe,12,0);
     if (numwrite == -1)
@@ -245,10 +250,12 @@ int main(int argc, char *argv[])
         {
             case 1:
             case 2:
-                printf("number of bytes: %d\n",askframe.pdu.data.reqread.bytestofollow);
+                printf("number of bytes containing bit values: %d\n",askframe.pdu.data.reqread.bytestofollow);
                 for (int i=0;i<askframe.pdu.data.reqread.bytestofollow;i++)
                 {
-                    printf("0x%02hhX ",askframe.pdu.data.reqread.bytes[i]);
+                    printf("0x%02hhX(",askframe.pdu.data.reqread.bytes[i]);
+                    printbinary(askframe.pdu.data.reqread.bytes[i]);
+                    printf(") ");
                 }
                 printf("\n");
                 break;
@@ -265,6 +272,11 @@ int main(int argc, char *argv[])
             case 6:
                 printf("register number %u\n", ntohs(askframe.pdu.data.writereg.regaddress));
                 printf("register value %u\n", ntohs(askframe.pdu.data.writereg.regvalue));
+                break;
+            case 15:
+            case 16:
+                printf("first register %u\n", ntohs(askframe.pdu.data.writemulticoil.firstreg));
+                printf("registers amount %u\n", ntohs(askframe.pdu.data.writemulticoil.regnumber));
                 break;
             default:
                 printf("unknown function number");
