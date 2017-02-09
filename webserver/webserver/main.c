@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/param.h>
 
 void drop(int dropstatus, char *dropdesc)
 {
@@ -42,7 +43,15 @@ long long filesize(int fd)
     return filestat.st_size;
 }
 
+void pwd(void)
+{
+    char path[MAXPATHLEN];
+    getwd(path);
+    printf("wd: %s\n",path);
+}
+
 int main(int argc, const char * argv[]) {
+    pwd();
     int sock = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
     drop(sock,"socket error");
     int reuseaddr = 1;
