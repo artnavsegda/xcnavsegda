@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include <sys/param.h>
 
+#define WWWROOT "/Users/artnavsegda/GitHub/htmlnavsegda"
+
 void drop(int dropstatus, char *dropdesc)
 {
     if (dropstatus == -1)
@@ -51,7 +53,7 @@ void pwd(void)
 }
 
 int main(int argc, const char * argv[]) {
-    pwd();
+    chdir(WWWROOT);
     int sock = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
     drop(sock,"socket error");
     int reuseaddr = 1;
