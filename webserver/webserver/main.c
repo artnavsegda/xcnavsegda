@@ -58,8 +58,9 @@ int main(int argc, const char * argv[]) {
     {
         int msgsock = accept(sock,NULL,NULL);
         drop(msgsock,"accept error");
-        int nchar;
-        ioctl(msgsock,FIONREAD,&nchar);
+        int nchar = 0;
+        while (nchar == 0)
+            ioctl(msgsock,FIONREAD,&nchar);
         char *buf = malloc(nchar+1);
         long numread = recv(msgsock,buf,nchar,0);
         drop3(numread,"recv error");
