@@ -45,11 +45,18 @@ long long filesize(int fd)
     return filestat.st_size;
 }
 
-void pwd(void)
+char * getmime(char * filename)
 {
-    char path[MAXPATHLEN];
-    getwd(path);
-    printf("wd: %s\n",path);
+    if (strcmp(strchr(filename,'.'),".html")==0)
+        return "\nContent-type: text/html\n\n";
+    else if (strcmp(strchr(filename,'.'),".js")==0)
+        return "\nContent-type: application/javascript\n\n";
+    else if (strcmp(strchr(filename,'.'),".txt")==0)
+        return "\nContent-type: text/plain\n\n";
+    else if (strcmp(strchr(filename,'.'),".css")==0)
+        return "\nContent-type: text/CSS\n\n";
+    else
+        return "\nContent-type: text/plain\n\n";
 }
 
 int main(int argc, const char * argv[]) {
@@ -90,7 +97,7 @@ int main(int argc, const char * argv[]) {
         else
         {
             drop3(send(msgsock,"HTTP/1.1 200 OK",15,0),"send response error");
-            drop3(send(msgsock,"\nContent-type: text/html\n\n",26,0),"send mime type error");
+            drop3(send(msgsock,getmime(page),strlen(getmime(page)),0),"send mime type error");
             char *data = malloc(filesize(webpage)+1);
             numread = read(webpage,data,filesize(webpage));
             drop3(numread,"read error");
